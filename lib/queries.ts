@@ -1,16 +1,20 @@
 import { createClient } from './supabase'
 import type { JobApplication, Status } from '@/types'
 
-export async function getApplications() {
+export async function getApplications(page = 1, pageSize = 10) {
   const supabase = createClient()
-  const { data, error } = await supabase
-    .from('job_applications')
-    .select('*')
-    .order('applied_at', { ascending: false })
-  if (error) throw error
-  return data as JobApplication[]
-}
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
 
+  const { data, count, error } = await supabase
+    .from('job_applications')
+    .select('*', { count: 'exact' })
+    .order('applied_at', { ascending: false })
+    .range(from, to)
+
+  if (error) throw error
+  return { data: data as JobApplication[], total: count ?? 0 }
+}
 export async function addApplication(input: Omit<JobApplication, 'id' | 'user_id' | 'created_at'>) {
   const supabase = createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()

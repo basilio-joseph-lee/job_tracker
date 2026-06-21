@@ -28,16 +28,21 @@ export default function ApplicationsPage() {
   const [apps, setApps] = useState<JobApplication[]>([])
   const [loading, setLoading] = useState(true)
   const visible = useStagger(TOTAL_BLOCKS, 90)
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 5
 
-  async function fetchApps() {
-    const data = await getApplications()
+
+  async function fetchApps(p = page) {
+    setLoading(true)
+    const { data, total } = await getApplications(p, PAGE_SIZE)
     setApps(data)
+    setTotal(total)
     setLoading(false)
   }
 
-  useEffect(() => {
-    fetchApps()
-  }, [])
+
+  useEffect(() => { fetchApps(page) }, [page])
 
   const s = (i: number) => ({
     opacity: visible[i] ? 1 : 0,
@@ -82,7 +87,14 @@ export default function ApplicationsPage() {
             ))}
           </div>
         ) : (
-          <ApplicationTable initial={apps} onRefresh={fetchApps} />
+          <ApplicationTable
+            initial={apps}
+            total={total}
+            page={page}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+            onRefresh={() => fetchApps(page)}
+          />
         )}
       </div>
 

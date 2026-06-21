@@ -3,14 +3,25 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import type { JobApplication, Status } from '@/types'
 import StatusBadge from './StatusBadge'
-import AddButton from './AddButton'
 import ApplicationForm from './ApplicationForm'
+import { formatDate } from '../utils/DateFormat'
 import { updateApplication, deleteApplication } from '@/lib/queries'
 
 const STATUSES: Status[] = ['applied', 'screening', 'interview', 'technical', 'offer', 'rejected', 'ghosted', 'withdrawn']
 
-export default function ApplicationTable({ initial, onRefresh }: {
+export default function ApplicationTable({
+  initial,
+  total,
+  page,
+  pageSize,
+  onPageChange,
+  onRefresh,
+}: {
   initial: JobApplication[]
+  total: number
+  page: number
+  pageSize: number
+  onPageChange: (page: number) => void
   onRefresh?: () => void
 }) {
   const [apps, setApps] = useState(initial)
@@ -23,6 +34,8 @@ export default function ApplicationTable({ initial, onRefresh }: {
 
   useEffect(() => { setMounted(true) }, [])
   useEffect(() => { setApps(initial) }, [initial])
+
+  const totalPages = Math.ceil(total / pageSize)
 
   const filtered = apps.filter(a => {
     const matchStatus = filter === 'all' || a.status === filter
@@ -78,7 +91,7 @@ export default function ApplicationTable({ initial, onRefresh }: {
           {/* Applied date */}
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-400 font-medium">Date applied</span>
-            <span className="text-sm font-semibold text-[#0F172A]">{detail.applied_at}</span>
+            <span className="text-sm font-semibold text-[#0F172A]">{formatDate(detail.applied_at)}</span>
           </div>
 
           {/* Status — inline selector */}
@@ -213,26 +226,23 @@ export default function ApplicationTable({ initial, onRefresh }: {
       </div>
 
       {/* ── Results ── */}
-{filtered.length === 0 ? (
-  <div className="bg-white border border-slate-200 rounded-2xl px-8 py-14 flex flex-col items-center justify-center text-center gap-4">
-    
-    <img
-      src="/empty-fox.png"
-      alt="No applications"
-      className="w-44 h-44 object-contain"
-    />
-
-    <div>
-      <p className="font-jakarta font-extrabold text-lg text-[#0F172A] mb-1">
-        No applications yet
-      </p>
-      <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
-        Start tracking your job applications to stay organized.
-      </p>
-    </div>
-
-  </div>
-) : (
+      {filtered.length === 0 ? (
+        <div className="bg-white border border-slate-200 rounded-2xl px-8 py-14 flex flex-col items-center justify-center text-center gap-4">
+          <img
+            src="/empty-fox.png"
+            alt="No applications"
+            className="w-44 h-44 object-contain"
+          />
+          <div>
+            <p className="font-jakarta font-extrabold text-lg text-[#0F172A] mb-1">
+              No applications yet
+            </p>
+            <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
+              Start tracking your job applications to stay organized.
+            </p>
+          </div>
+        </div>
+      ) : (
         <div className="flex flex-col gap-2">
           {filtered.map(app => (
             <div
@@ -247,14 +257,14 @@ export default function ApplicationTable({ initial, onRefresh }: {
                 <p className="text-xs text-slate-400 mt-0.5 truncate">
                   {app.company}
                   <span className="mx-1.5 text-slate-200">·</span>
-                  {app.applied_at}
+                  {formatDate(app.applied_at)}
                 </p>
                 {app.note && (
                   <p className="text-xs text-slate-300 truncate mt-1">{app.note}</p>
                 )}
               </div>
 
-              {/* Inline status badge — click stops propagation, opens status picker */}
+              {/* Inline status selector */}
               <div onClick={e => e.stopPropagation()}>
                 <select
                   value={app.status}
@@ -297,6 +307,39 @@ export default function ApplicationTable({ initial, onRefresh }: {
           ))}
         </div>
       )}
+
+      {/* ── Pagination ── */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-5 px-1">
+          <p className="text-xs text-slate-400">
+            Showing{' '}
+            <span className="font-semibold text-slate-500">
+              {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)}
+            </span>{' '}
+            of <span className="font-semibold text-slate-500">{total}</span>
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onPageChange(page - 1)}
+              disabled={page === 1}
+              className="border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-500 hover:border-indigo-200 hover:text-[#6366F1] hover:bg-indigo-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              ← Prev
+            </button>
+            <span className="text-xs text-slate-400 tabular-nums">
+              {page} / {totalPages}
+            </span>
+            <button
+              onClick={() => onPageChange(page + 1)}
+              disabled={page >= totalPages}
+              className="border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-500 hover:border-indigo-200 hover:text-[#6366F1] hover:bg-indigo-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

@@ -39,11 +39,12 @@ const links = [
       </svg>
     ),
   },
+ 
 ]
 
 const premiumLinks = [
   {
-    href: '/fix-resume',
+    href: '/Resume',
     label: 'Fix Resume',
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -55,7 +56,7 @@ const premiumLinks = [
     ),
   },
   {
-    href: '/job-search',
+    href: '/JobSearch',
     label: 'Job Search',
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

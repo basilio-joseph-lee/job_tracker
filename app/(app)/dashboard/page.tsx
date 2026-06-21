@@ -6,6 +6,7 @@ import GoalProgressBar from '@/components/GoalProgressBar'
 import StatusBadge from '@/components/StatusBadge'
 import AddButton from '@/components/AddButton'
 import type { JobApplication } from '@/types'
+import { formatDate } from '@/utils/DateFormat'
 
 function getGreeting() {
   const h = new Date().getHours()
@@ -56,7 +57,7 @@ export default function DashboardPage() {
   const visible = useStagger(TOTAL_BLOCKS, 90)
 
   async function fetchApps() {
-    const data = await getApplications()
+    const { data } = await getApplications(1, 5)
     setApps(data)
     setLoading(false)
   }
@@ -204,7 +205,7 @@ function RecentRow({ app, index }: { app: JobApplication; index: number }) {
         <p className="text-xs text-slate-400 mt-0.5 truncate">
           {app.company}
           <span className="mx-1.5 text-slate-200">·</span>
-          {app.applied_at}
+          {formatDate(app.applied_at)}
         </p>
         {app.note && (
           <p className="text-xs text-slate-300 truncate mt-1">{app.note}</p>
