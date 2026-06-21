@@ -16,6 +16,10 @@ export default function ApplicationTable({
   pageSize,
   onPageChange,
   onRefresh,
+  search,
+  onSearchChange,
+  status,
+  onStatusChange,
 }: {
   initial: JobApplication[]
   total: number
@@ -23,10 +27,12 @@ export default function ApplicationTable({
   pageSize: number
   onPageChange: (page: number) => void
   onRefresh?: () => void
+  search: string
+  onSearchChange: (value: string) => void
+  status: Status | 'all'
+  onStatusChange: (value: Status | 'all') => void
 }) {
   const [apps, setApps] = useState(initial)
-  const [filter, setFilter] = useState<Status | 'all'>('all')
-  const [search, setSearch] = useState('')
   const [editing, setEditing] = useState<JobApplication | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [detail, setDetail] = useState<JobApplication | null>(null)
@@ -37,13 +43,8 @@ export default function ApplicationTable({
 
   const totalPages = Math.ceil(total / pageSize)
 
-  const filtered = apps.filter(a => {
-    const matchStatus = filter === 'all' || a.status === filter
-    const matchSearch =
-      a.job_title.toLowerCase().includes(search.toLowerCase()) ||
-      a.company.toLowerCase().includes(search.toLowerCase())
-    return matchStatus && matchSearch
-  })
+  // apps coming in are already filtered + paginated server-side
+  const filtered = apps
 
   async function handleUpdate(data: Omit<JobApplication, 'id' | 'user_id' | 'created_at'>) {
     if (!editing) return
@@ -211,13 +212,13 @@ export default function ApplicationTable({
           <input
             placeholder="Search job or company..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => onSearchChange(e.target.value)}
             className="w-full border border-slate-200 bg-white rounded-xl pl-8 pr-4 py-2.5 text-sm text-[#0F172A] outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition"
           />
         </div>
         <select
-          value={filter}
-          onChange={e => setFilter(e.target.value as Status | 'all')}
+          value={status}
+          onChange={e => onStatusChange(e.target.value as Status | 'all')}
           className="border border-slate-200 bg-white rounded-xl px-3 py-2.5 text-sm text-[#0F172A] outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition"
         >
           <option value="all">All statuses</option>

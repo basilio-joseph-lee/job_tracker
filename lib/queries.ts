@@ -1,16 +1,30 @@
 import { createClient } from './supabase'
 import type { JobApplication, Status } from '@/types'
 
-export async function getApplications(page = 1, pageSize = 10) {
+export async function getApplications(
+  page = 1,
+  pageSize = 10,
+  search = '',
+  status: Status | 'all' = 'all'
+) {
   const supabase = createClient()
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
 
-  const { data, count, error } = await supabase
+  let query = supabase
     .from('job_applications')
     .select('*', { count: 'exact' })
     .order('applied_at', { ascending: false })
-    .range(from, to)
+
+  if (status !== 'all') {
+    query = query.eq('status', status)
+  }
+
+  if (search.trim()) {
+    query = query.or(`company.ilike.%${search}%,job_title.ilike.%${search}%`)
+  }
+
+  const { data, count, error } = await query.range(from, to)
 
   if (error) throw error
   return { data: data as JobApplication[], total: count ?? 0 }

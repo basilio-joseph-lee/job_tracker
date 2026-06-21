@@ -1,9 +1,9 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { getApplications } from '@/lib/queries'
 import ApplicationTable from '@/components/ApplicationTable'
 import AddButton from '@/components/AddButton'
-import type { JobApplication } from '@/types'
+import type { JobApplication, Status } from '@/types'
 
 function useStagger(count: number, delayMs = 80) {
   const [visible, setVisible] = useState<boolean[]>(Array(count).fill(false))
@@ -22,7 +22,7 @@ function useStagger(count: number, delayMs = 80) {
   return visible
 }
 
-const TOTAL_BLOCKS = 2 // header, filters+table skeleton, table
+const TOTAL_BLOCKS = 2
 
 export default function ApplicationsPage() {
   const [apps, setApps] = useState<JobApplication[]>([])
@@ -30,19 +30,30 @@ export default function ApplicationsPage() {
   const visible = useStagger(TOTAL_BLOCKS, 90)
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [status, setStatus] = useState<Status | 'all'>('all')
   const PAGE_SIZE = 5
 
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(t)
+  }, [search])
 
-  async function fetchApps(p = page) {
+  // reset to page 1 whenever search OR status changes
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearch, status])
+
+  const fetchApps = useCallback(async (p = page) => {
     setLoading(true)
-    const { data, total } = await getApplications(p, PAGE_SIZE)
+    const { data, total } = await getApplications(p, PAGE_SIZE, debouncedSearch, status)
     setApps(data)
     setTotal(total)
     setLoading(false)
-  }
+  }, [page, debouncedSearch, status])
 
-
-  useEffect(() => { fetchApps(page) }, [page])
+  useEffect(() => { fetchApps(page) }, [page, debouncedSearch, status])
 
   const s = (i: number) => ({
     opacity: visible[i] ? 1 : 0,
@@ -64,9 +75,7 @@ export default function ApplicationsPage() {
         <AddButton onAdded={fetchApps} />
       </div>
 
-
-
-      {/* ── BLOCK 2: Table ── */}
+      {/* ── BLOCK 1: Table (filters now live inside ApplicationTable, controlled) ── */}
       <div style={s(1)}>
         {loading ? (
           <div className="flex flex-col gap-2">
@@ -94,6 +103,10 @@ export default function ApplicationsPage() {
             pageSize={PAGE_SIZE}
             onPageChange={setPage}
             onRefresh={() => fetchApps(page)}
+            search={search}
+            onSearchChange={setSearch}
+            status={status}
+            onStatusChange={setStatus}
           />
         )}
       </div>
